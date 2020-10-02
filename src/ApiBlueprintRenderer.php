@@ -51,6 +51,10 @@ class ApiBlueprintRenderer implements Renderer
      */
     public function render($nameOrModel, $values = null)
     {
+        if (!$nameOrModel->getVariable('documentation')) {
+            return;
+        }
+
         $port = $this->requestUri->getPort();
         $host = $this->requestUri->getHost();
         $host .= $port ? ':' . $port : '';

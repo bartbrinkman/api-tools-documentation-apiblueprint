@@ -9,11 +9,11 @@
             <th>Versions</th>
         </tr>
     </thead>
-    <tbody><?php foreach ($this->apis as $api): 
+    <tbody><?php foreach ($this->apis as $api):
         $name = $api['name']; ?>
         <tr>
             <td><?php echo $this->escapeHtml($name) ?></td>
-            <td><?php 
+            <td><?php
                 $view     = $this;
                 $versions = array_map(function ($version) use ($name, $view) {
                     return sprintf(

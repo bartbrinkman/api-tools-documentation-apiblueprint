@@ -31,7 +31,7 @@ return [
                             'api' => [
                                 'type' => 'segment',
                                 'options' => [
-                                    'route' => '/:api',
+                                    'route' => '/:api[/:version]',
                                     'defaults' => [
                                         'action' => 'show',
                                     ],
@@ -72,6 +72,7 @@ return [
         'accept_whitelist' => [
             Controller::class => [
                 'text/vnd.apiblueprint+markdown',
+                'text/html',
             ],
         ],
         'selectors' => [

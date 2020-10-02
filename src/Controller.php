@@ -35,6 +35,7 @@ class Controller extends AbstractActionController
         $apis = $this->apiFactory->createApiList();
         $viewModel = new ViewModel(['apis' => $apis]);
         $viewModel->setTemplate('api-tools-documentation-blueprint/api-list');
+
         return $viewModel;
     }
 
