@@ -14,7 +14,7 @@ use Laminas\View\Model\ViewModel;
 class ApiBlueprintModel extends ViewModel
 {
 
-    const FORMAT = '1A';
+    const FORMAT = '1A9';
     const CODE_BLOCK_INDENT = '        '; // 8 spaces, cannot use tabs (\t)
     const EMPTY_ROW = "\n\n";
     private $verbDescriptions = [
@@ -55,6 +55,7 @@ class ApiBlueprintModel extends ViewModel
     {
         foreach ($resourceGroups as $resourceGroup) {
             $this->apiBlueprint .= '# Group ' . $resourceGroup->getName() . PHP_EOL;
+            $this->apiBlueprint .= $resourceGroup->getDescription() . PHP_EOL;
             $this->writeFormattedResources($resourceGroup->getResources());
         }
     }
@@ -116,8 +117,9 @@ class ApiBlueprintModel extends ViewModel
      */
     private function writeBodyProperties(array $bodyProperties)
     {
+        $this->apiBlueprint .= '+ Attributes' . PHP_EOL;
         foreach ($bodyProperties as $property) {
-            $this->apiBlueprint .= "+ " . $this->getFormattedProperty($property) . PHP_EOL;
+            $this->apiBlueprint .= " + " . $this->getFormattedProperty($property) . PHP_EOL;
         }
         $this->apiBlueprint .= self::EMPTY_ROW;
     }
@@ -140,7 +142,23 @@ class ApiBlueprintModel extends ViewModel
 
         // Laminas API Tools provides pagination results for collections
         // automatically, so page parameter will be available.
-        $this->apiBlueprint .= " + " . 'page' . self::EMPTY_ROW;
+        $this->apiBlueprint .= " + " . 'page (number, optional) - Seek through the results when the number of results exceeds `limit`.' . PHP_EOL;
+        $this->apiBlueprint .= "     + " . 'Default: `1`' . PHP_EOL;
+        $this->apiBlueprint .= " + " . 'limit (number, optional) - Number of results per `page`.' . PHP_EOL;
+        $this->apiBlueprint .= "     + " . 'Default: `10`' . PHP_EOL;
+        $this->apiBlueprint .= " + " . 'filter (enum[array], optional) - Apply filters on the resource collection. Learn more about how to use this feature <a href="/api/query">here</a>.' . PHP_EOL;
+        $this->apiBlueprint .= "     + Members" . PHP_EOL;
+        $this->apiBlueprint .= "         + `type`" . PHP_EOL;
+        $this->apiBlueprint .= "         + `field`" . PHP_EOL;
+        $this->apiBlueprint .= "         + `value`" . PHP_EOL;
+        $this->apiBlueprint .= "         + `alias`" . PHP_EOL;
+        $this->apiBlueprint .= " + " . 'order%2Dby (enum[array], optional) - Sort the results of the collection. Learn more about how to use this feature <a href="/api/query">here</a>.' . PHP_EOL;
+        $this->apiBlueprint .= "     + Members" . PHP_EOL;
+        $this->apiBlueprint .= "         + `type` (string, required)" . PHP_EOL;
+        $this->apiBlueprint .= "         + `field` (string, required)" . PHP_EOL;
+        $this->apiBlueprint .= "         + `direction` (string, optional)" . PHP_EOL;
+
+        $this->apiBlueprint .= self::EMPTY_ROW;
     }
 
     /**

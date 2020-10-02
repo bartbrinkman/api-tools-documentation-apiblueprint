@@ -51,15 +51,15 @@ class Resource
 
     private $verbMapping = [
         self::RESOURCE_TYPE_ENTITY => [
-            Request::METHOD_GET => 'Fetch',
+            Request::METHOD_GET => 'Retrieve',
             Request::METHOD_PATCH => 'Update',
-            Request::METHOD_DELETE => 'Delete',
+            Request::METHOD_DELETE => 'Remove',
         ],
         self::RESOURCE_TYPE_COLLECTION => [
-            Request::METHOD_GET => 'Fetch all',
-            Request::METHOD_POST => 'Create',
+            Request::METHOD_GET => 'List all',
+            Request::METHOD_POST => 'Create new',
         ],
-        self::RESOURCE_TYPE_RPC => 'Procedure',
+        self::RESOURCE_TYPE_RPC => 'Requests',
     ];
 
     /**
@@ -76,7 +76,10 @@ class Resource
         $this->resourceType = $resourceType;
 
         if ($this->getResourceType() == self::RESOURCE_TYPE_COLLECTION && $this->getParameter()) {
-            $this->uri .= "?page={page}";
+            $this->uri .= "?page={page}&limit={limit}";
+            if (true) {
+                $this->uri .= "&filter={filter}&order-by={order%2Dby}";
+            }
         }
 
         foreach ($operations as $operation) {
@@ -96,6 +99,14 @@ class Resource
      */
     public function getName()
     {
+        if ($this->resourceType === self::RESOURCE_TYPE_COLLECTION) {
+            return $this->service->getOperationsName() ?? $this->service->getName();
+        }
+
+        if ($this->resourceType === self::RESOURCE_TYPE_ENTITY) {
+            return $this->service->getEntityOperationsName() ?? $this->service->getName();
+        }
+
         return $this->typeMapping[$this->resourceType] ?? $this->service->getName();
     }
 
