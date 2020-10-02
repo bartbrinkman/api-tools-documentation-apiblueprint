@@ -17,6 +17,12 @@ class ApiBlueprintModel extends ViewModel
     const FORMAT = '1A';
     const CODE_BLOCK_INDENT = '        '; // 8 spaces, cannot use tabs (\t)
     const EMPTY_ROW = "\n\n";
+    private $verbDescriptions = [
+        'POST' => 'Create',
+        'PATCH' => 'Update',
+        'PUT' => 'Replace',
+        'DELETE' => 'Delete',
+    ];
 
     /**
      * @var string

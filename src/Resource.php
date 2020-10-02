@@ -10,6 +10,7 @@ namespace Laminas\ApiTools\Documentation\ApiBlueprint;
 
 use Laminas\ApiTools\Documentation\Operation as BaseOperation;
 use Laminas\ApiTools\Documentation\Service as BaseService;
+use Laminas\Http\Request;
 
 class Resource
 {
@@ -42,6 +43,25 @@ class Resource
      */
     private $resourceType;
 
+    private $typeMapping = [
+        self::RESOURCE_TYPE_ENTITY => 'Entity',
+        self::RESOURCE_TYPE_COLLECTION => 'Collection',
+        self::RESOURCE_TYPE_RPC => 'Procedure',
+    ];
+
+    private $verbMapping = [
+        self::RESOURCE_TYPE_ENTITY => [
+            Request::METHOD_GET => 'Fetch',
+            Request::METHOD_PATCH => 'Update',
+            Request::METHOD_DELETE => 'Delete',
+        ],
+        self::RESOURCE_TYPE_COLLECTION => [
+            Request::METHOD_GET => 'Fetch all',
+            Request::METHOD_POST => 'Create',
+        ],
+        self::RESOURCE_TYPE_RPC => 'Procedure',
+    ];
+
     /**
      * @param BaseService $service
      * @param BaseOperation[] $operations
@@ -53,12 +73,22 @@ class Resource
         $this->service = $service;
         $this->operations = $operations;
         $this->uri = $uri;
-        $this->createActions();
         $this->resourceType = $resourceType;
 
         if ($this->getResourceType() == self::RESOURCE_TYPE_COLLECTION && $this->getParameter()) {
             $this->uri .= "?page={page}";
         }
+
+        foreach ($operations as $operation) {
+            if ($operation->getDescription()) {
+                continue;
+            }
+
+            $operation->setDescription($this->verbMapping[$this->resourceType] ?? '');
+            $operation->setDescription($this->verbMapping[$this->resourceType][$operation->getHttpMethod()] ?? '');
+        }
+
+        $this->createActions();
     }
 
     /**
@@ -66,7 +96,7 @@ class Resource
      */
     public function getName()
     {
-        return $this->service->getName();
+        return $this->typeMapping[$this->resourceType] ?? $this->service->getName();
     }
 
     /**
