@@ -70,11 +70,11 @@ class ApiBlueprintModel extends ViewModel
             if (count($resource->getActions())) {
                 $this->apiBlueprint .= '## ' . $resource->getName() . ' ';
                 $this->apiBlueprint .= '[' . $resource->getUri() . ']' . PHP_EOL;
-                if ($resource->getResourceType() !== Resource::RESOURCE_TYPE_COLLECTION) {
-                    $this->writeBodyProperties($resource->getbodyProperties());
-                }
+                // if ($resource->getResourceType() !== Resource::RESOURCE_TYPE_COLLECTION) {
+                    // $this->writeBodyProperties($resource->getbodyProperties());
+                // }
                 $this->writeUriParameters($resource);
-                $this->writeFormattedActions($resource->getActions());
+                $this->writeFormattedActions($resource->getActions(), $resource->getResourceType());
             }
         }
     }
@@ -82,17 +82,21 @@ class ApiBlueprintModel extends ViewModel
     /**
      * @param Action[] $resources
      */
-    private function writeFormattedActions(array $actions)
+    private function writeFormattedActions(array $actions, string $resourceType)
     {
         foreach ($actions as $action) {
             $this->apiBlueprint .= '### ' . $action->getDescription() . ' ';
             $this->apiBlueprint .= '[' . $action->getHttpMethod() . ']' . self::EMPTY_ROW;
-            $this->writeBodyProperties($action->getBodyProperties());
+            $isEntityGetOrDeleteAction = $resourceType === Resource::RESOURCE_TYPE_ENTITY && (
+                $action->getHttpMethod() === 'GET' || $action->getHttpMethod() === 'DELETE'
+            );
+            if (!$isEntityGetOrDeleteAction) {
+                $this->writeBodyProperties($action->getBodyProperties());
+            }
             $requestDescription = $action->getRequestDescription();
             if ($action->allowsChangingEntity() && ! empty($requestDescription)) {
                 $this->apiBlueprint .= '+ Request' . self::EMPTY_ROW;
-                $this->apiBlueprint .= $this->getFormattedCodeBlock($action->getRequestDescription())
-                    . self::EMPTY_ROW;
+                $this->apiBlueprint .= $this->getFormattedCodeBlock($action->getRequestDescription()) . self::EMPTY_ROW;
             }
             $this->writeFormattedResponses($action);
         }
@@ -106,8 +110,13 @@ class ApiBlueprintModel extends ViewModel
         foreach ($action->getPossibleResponses() as $response) {
             $this->apiBlueprint .= '+ Response ' . $response['code']  . self::EMPTY_ROW;
             if ($response['code'] == 200) {
-                $this->apiBlueprint .= $this->getFormattedCodeBlock($action->getResponseDescription())
-                    . self::EMPTY_ROW;
+                $this->apiBlueprint .= $this->getFormattedCodeBlock($action->getResponseDescription()) . self::EMPTY_ROW;
+            }
+            if ($response['code'] >= 400) {
+                $problem = new \Laminas\ApiTools\ApiProblem\ApiProblem($response['code'], $response['message']);
+                $model = new \Laminas\ApiTools\ApiProblem\View\ApiProblemModel($problem);
+                $renderer = new \Laminas\ApiTools\ApiProblem\View\ApiProblemRenderer();
+                $this->apiBlueprint .= $renderer->render($model).self::EMPTY_ROW;
             }
         }
     }
@@ -117,9 +126,9 @@ class ApiBlueprintModel extends ViewModel
      */
     private function writeBodyProperties(array $bodyProperties)
     {
-        $this->apiBlueprint .= '+ Attributes' . PHP_EOL;
+        $this->apiBlueprint .= '+ Attributes (object)' . PHP_EOL;
         foreach ($bodyProperties as $property) {
-            $this->apiBlueprint .= " + " . $this->getFormattedProperty($property) . PHP_EOL;
+            $this->apiBlueprint .= "    + " . $this->getFormattedProperty($property) . PHP_EOL;
         }
         $this->apiBlueprint .= self::EMPTY_ROW;
     }
@@ -136,27 +145,27 @@ class ApiBlueprintModel extends ViewModel
 
         $this->apiBlueprint .= '+ Parameters' . PHP_EOL;
         if ($resourceType === Resource::RESOURCE_TYPE_ENTITY) {
-            $this->apiBlueprint .= " + " . $resource->getParameter() . self::EMPTY_ROW;
+            $this->apiBlueprint .= "    + " . $resource->getParameter() . self::EMPTY_ROW;
             return;
         }
 
         // Laminas API Tools provides pagination results for collections
         // automatically, so page parameter will be available.
-        $this->apiBlueprint .= " + " . 'page (number, optional) - Seek through the results when the number of results exceeds `limit`.' . PHP_EOL;
-        $this->apiBlueprint .= "     + " . 'Default: `1`' . PHP_EOL;
-        $this->apiBlueprint .= " + " . 'limit (number, optional) - Number of results per `page`.' . PHP_EOL;
-        $this->apiBlueprint .= "     + " . 'Default: `10`' . PHP_EOL;
-        $this->apiBlueprint .= " + " . 'filter (enum[array], optional) - Apply filters on the resource collection. Learn more about how to use this feature <a href="/api/query">here</a>.' . PHP_EOL;
-        $this->apiBlueprint .= "     + Members" . PHP_EOL;
-        $this->apiBlueprint .= "         + `type`" . PHP_EOL;
-        $this->apiBlueprint .= "         + `field`" . PHP_EOL;
-        $this->apiBlueprint .= "         + `value`" . PHP_EOL;
-        $this->apiBlueprint .= "         + `alias`" . PHP_EOL;
-        $this->apiBlueprint .= " + " . 'order%2Dby (enum[array], optional) - Sort the results of the collection. Learn more about how to use this feature <a href="/api/query">here</a>.' . PHP_EOL;
-        $this->apiBlueprint .= "     + Members" . PHP_EOL;
-        $this->apiBlueprint .= "         + `type` (string, required)" . PHP_EOL;
-        $this->apiBlueprint .= "         + `field` (string, required)" . PHP_EOL;
-        $this->apiBlueprint .= "         + `direction` (string, optional)" . PHP_EOL;
+        $this->apiBlueprint .= "    + " . 'page (number, optional) - Seek through the results when the number of results exceeds `limit`.' . PHP_EOL;
+        $this->apiBlueprint .= "        + " . 'Default: `1`' . PHP_EOL;
+        $this->apiBlueprint .= "    + " . 'limit (number, optional) - Number of results per `page`.' . PHP_EOL;
+        $this->apiBlueprint .= "        + " . 'Default: `10`' . PHP_EOL;
+        $this->apiBlueprint .= "    + " . 'filter (enum[array], optional) - Apply filters on the results by one or more attributes. Learn more about how to use this feature <a href="/api/query">here</a>.' . PHP_EOL;
+        $this->apiBlueprint .= "        + Members" . PHP_EOL;
+        $this->apiBlueprint .= "            + `type`" . PHP_EOL;
+        $this->apiBlueprint .= "        + `field`" . PHP_EOL;
+        $this->apiBlueprint .= "        + `value`" . PHP_EOL;
+        $this->apiBlueprint .= "        + `alias`" . PHP_EOL;
+        $this->apiBlueprint .= "    + " . 'order%2Dby (enum[array], optional) - Sort the results by one or more attributes. Learn more about how to use this feature <a href="/api/query">here</a>.' . PHP_EOL;
+        $this->apiBlueprint .= "        + Members" . PHP_EOL;
+        $this->apiBlueprint .= "            + `type` (string, required)" . PHP_EOL;
+        $this->apiBlueprint .= "            + `field` (string, required)" . PHP_EOL;
+        $this->apiBlueprint .= "            + `direction` (string, optional)" . PHP_EOL;
 
         $this->apiBlueprint .= self::EMPTY_ROW;
     }
@@ -177,6 +186,18 @@ class ApiBlueprintModel extends ViewModel
     private function getFormattedProperty(Field $property)
     {
         $output = $property->getName();
+
+        if ($property->getExample()) {
+            $output .= ': `' . $property->getExample() . '`';
+        }
+
+        $output .= sprintf(
+            ' (%s%s%s)',
+            $property->getFieldType(),
+            $property->getFieldType() ? ', ' : '',
+            $property->isRequired() ? 'required' : 'optional'
+        );
+
         $description = $property->getDescription();
         if (strlen($description)) {
             $output .= ' - ' . $description;

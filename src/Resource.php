@@ -100,11 +100,17 @@ class Resource
     public function getName()
     {
         if ($this->resourceType === self::RESOURCE_TYPE_COLLECTION) {
-            return $this->service->getOperationsName() ?? $this->service->getName();
+            return
+                $this->service->getOperationsName()
+                ?? $this->typeMapping[$this->resourceType]
+                ?? $this->service->getName();
         }
 
         if ($this->resourceType === self::RESOURCE_TYPE_ENTITY) {
-            return $this->service->getEntityOperationsName() ?? $this->service->getName();
+            return
+                $this->service->getEntityOperationsName()
+                ?? $this->typeMapping[$this->resourceType]
+                ?? $this->service->getName();
         }
 
         return $this->typeMapping[$this->resourceType] ?? $this->service->getName();
@@ -161,9 +167,26 @@ class Resource
             $action = new Action($operation);
             if ($action->allowsChangingEntity()) {
                 $action->setBodyProperties(array_filter($this->service->getFields('input_filter'), function ($field) {
-                    return $field->isRequired();
+                    return $field;
+                }));
+                if ($this->service->getFields($action->getHttpMethod())) {
+                    $action->setBodyProperties(array_filter($this->service->getFields($action->getHttpMethod()), function ($field) {
+                        return $field;
+                    }));
+                }
+            }
+            if (!$action->allowsChangingEntity()) {
+                $action->setBodyProperties(array_filter($this->service->getFields('doctrine'), function ($field) {
+                    return $field;
                 }));
             }
+
+            foreach ($action->getBodyProperties() as $field) {
+                if ($action->getHttpMethod() === Request::METHOD_PATCH) {
+                    $field->setRequired(false);
+                }
+            }
+
             $this->actions[] = $action;
         }
     }
