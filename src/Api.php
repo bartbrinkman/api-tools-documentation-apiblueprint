@@ -40,6 +40,14 @@ class Api
     }
 
     /**
+     * @return string
+     */
+    public function getDescription()
+    {
+        return $this->api->getDescription();
+    }
+
+    /**
      * @return ResourceGroup[]
      */
     public function getResourceGroups()

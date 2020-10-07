@@ -43,6 +43,9 @@ class ApiBlueprintModel extends ViewModel
         $this->apiBlueprint = 'FORMAT: ' . self::FORMAT . PHP_EOL;
         $this->apiBlueprint .= 'HOST: ' . $scheme . "://" . $host . self::EMPTY_ROW;
         $this->apiBlueprint .= '# ' . $model->getName() . PHP_EOL;
+        if ($model->getDescription()) {
+            $this->apiBlueprint .= $model->getDescription() . PHP_EOL;
+        }
         $this->apiBlueprint .= $this->writeFormattedResourceGroups($model->getResourceGroups());
 
         return $this->apiBlueprint;
