@@ -48,6 +48,14 @@ class ResourceGroup
     }
 
     /**
+     * @return array
+     */
+    public function getTags()
+    {
+        return $this->service->getTags();
+    }
+
+    /**
      * @return Resource[]
      */
     public function getResources()

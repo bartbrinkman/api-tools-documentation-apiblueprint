@@ -58,6 +58,7 @@ class ApiBlueprintRenderer implements Renderer
         $port = $this->requestUri->getPort();
         $host = $this->requestUri->getHost();
         $host .= $port ? ':' . $port : '';
+
         return $nameOrModel->getFormattedApiBlueprint($this->requestUri->getScheme(), $host);
     }
 }

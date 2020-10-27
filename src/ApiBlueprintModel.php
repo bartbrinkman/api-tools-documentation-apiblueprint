@@ -57,6 +57,10 @@ class ApiBlueprintModel extends ViewModel
     private function writeFormattedResourceGroups(array $resourceGroups)
     {
         foreach ($resourceGroups as $resourceGroup) {
+            if ($this->tag && !in_array($this->tag, $resourceGroup->getTags())) {
+                continue;
+            }
+
             $this->apiBlueprint .= '# Group ' . $resourceGroup->getName() . PHP_EOL;
             $this->apiBlueprint .= $resourceGroup->getDescription() . PHP_EOL;
             $this->writeFormattedResources($resourceGroup->getResources());
@@ -99,7 +103,7 @@ class ApiBlueprintModel extends ViewModel
             $requestDescription = $action->getRequestDescription();
             if ($action->allowsChangingEntity() && ! empty($requestDescription)) {
                 $this->apiBlueprint .= '+ Request' . self::EMPTY_ROW;
-                $this->apiBlueprint .= $this->getFormattedCodeBlock($action->getRequestDescription()) . self::EMPTY_ROW;
+                $this->apiBlueprint .= self::CODE_BLOCK_INDENT . $this->getFormattedCodeBlock($action->getRequestDescription()) . self::EMPTY_ROW;
             }
             $this->writeFormattedResponses($action);
         }
@@ -113,13 +117,13 @@ class ApiBlueprintModel extends ViewModel
         foreach ($action->getPossibleResponses() as $response) {
             $this->apiBlueprint .= '+ Response ' . $response['code']  . self::EMPTY_ROW;
             if ($response['code'] == 200) {
-                $this->apiBlueprint .= $this->getFormattedCodeBlock($action->getResponseDescription()) . self::EMPTY_ROW;
+                $this->apiBlueprint .= self::CODE_BLOCK_INDENT . $this->getFormattedCodeBlock($action->getResponseDescription()) . self::EMPTY_ROW;
             }
             if ($response['code'] >= 400) {
                 $problem = new \Laminas\ApiTools\ApiProblem\ApiProblem($response['code'], $response['message']);
                 $model = new \Laminas\ApiTools\ApiProblem\View\ApiProblemModel($problem);
                 $renderer = new \Laminas\ApiTools\ApiProblem\View\ApiProblemRenderer();
-                $this->apiBlueprint .= $renderer->render($model).self::EMPTY_ROW;
+                $this->apiBlueprint .= self::CODE_BLOCK_INDENT . $renderer->render($model).self::EMPTY_ROW;
             }
         }
     }
@@ -161,9 +165,9 @@ class ApiBlueprintModel extends ViewModel
         $this->apiBlueprint .= "    + " . 'filter (enum[array], optional) - Apply filters on the results by one or more attributes. Learn more about how to use this feature <a href="/api/query">here</a>.' . PHP_EOL;
         $this->apiBlueprint .= "        + Members" . PHP_EOL;
         $this->apiBlueprint .= "            + `type`" . PHP_EOL;
-        $this->apiBlueprint .= "        + `field`" . PHP_EOL;
-        $this->apiBlueprint .= "        + `value`" . PHP_EOL;
-        $this->apiBlueprint .= "        + `alias`" . PHP_EOL;
+        $this->apiBlueprint .= "            + `field`" . PHP_EOL;
+        $this->apiBlueprint .= "            + `value`" . PHP_EOL;
+        $this->apiBlueprint .= "            + `alias`" . PHP_EOL;
         $this->apiBlueprint .= "    + " . 'order%2Dby (enum[array], optional) - Sort the results by one or more attributes. Learn more about how to use this feature <a href="/api/query">here</a>.' . PHP_EOL;
         $this->apiBlueprint .= "        + Members" . PHP_EOL;
         $this->apiBlueprint .= "            + `type` (string, required)" . PHP_EOL;
@@ -192,6 +196,34 @@ class ApiBlueprintModel extends ViewModel
 
         if ($property->getExample()) {
             $output .= ': `' . $property->getExample() . '`';
+        }
+
+        if (
+            $property->getFieldType()
+            && (
+                $property->getFieldType() === 'int'
+                || $property->getFieldType() === 'integer'
+            )
+        ) {
+            $property->setFieldType('number');
+        }
+
+        if (
+            $property->getFieldType()
+            && $property->getFieldType() === 'bool'
+        ) {
+            $property->setFieldType('boolean');
+        }
+
+        if (
+            $property->getFieldType()
+            && (
+                $property->getFieldType() === 'text'
+                || $property->getFieldType() === 'datetime'
+                || $property->getFieldType() === 'json_array'
+            )
+        ) {
+            $property->setFieldType('string');
         }
 
         $output .= sprintf(
