@@ -57,12 +57,25 @@ class ApiBlueprintModel extends ViewModel
     private function writeFormattedResourceGroups(array $resourceGroups)
     {
         foreach ($resourceGroups as $resourceGroup) {
-            if ($this->tag && !in_array($this->tag, $resourceGroup->getTags())) {
+            if ($this->filterByTag && !in_array($this->filterByTag, $resourceGroup->getTags())) {
                 continue;
             }
 
             $this->apiBlueprint .= '# Group ' . $resourceGroup->getName() . PHP_EOL;
             $this->apiBlueprint .= $resourceGroup->getDescription() . PHP_EOL;
+
+            if ($this->writeListeners && $resourceGroup->getListeners()) {
+                $this->apiBlueprint .= self::EMPTY_ROW;
+                $this->apiBlueprint .= '#### Listeners by event' . self::EMPTY_ROW;
+                foreach ($resourceGroup->getListeners() as $byEvent => $listeners) {
+                    $this->apiBlueprint .= '- `' . $byEvent . '`' . PHP_EOL;
+                    foreach ($listeners as $listener) {
+                        $this->apiBlueprint .= '  - ' . $listener . PHP_EOL;
+                    }
+                }
+                $this->apiBlueprint .= self::EMPTY_ROW;
+            }
+
             $this->writeFormattedResources($resourceGroup->getResources());
         }
     }

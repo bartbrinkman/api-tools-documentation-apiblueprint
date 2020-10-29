@@ -50,6 +50,14 @@ class ResourceGroup
     /**
      * @return array
      */
+    public function getListeners()
+    {
+        return $this->service->getListeners();
+    }
+
+    /**
+     * @return array
+     */
     public function getTags()
     {
         return $this->service->getTags();
